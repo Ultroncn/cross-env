@@ -40,13 +40,30 @@ function replaceListDelimiters(varValue: string, varName = ''): string {
  * @returns Converted value
  */
 function resolveEnvVars(varValue: string): string {
-	const envUnixRegex = /(\\*)(\$(\w+)|\${(\w+)})/g // $my_var or ${my_var} or \$my_var
+	const envUnixRegex = /(\\*)(\$(\w+)|\${(\w+):-([^}]*)}|\${(\w+)})/g // $my_var or ${my_var} or ${my_var:-default} or \$my_var
 	return varValue.replace(
 		envUnixRegex,
-		(_, escapeChars, varNameWithDollarSign, varName, altVarName) => {
+		(
+			_,
+			escapeChars,
+			varNameWithDollarSign,
+			varName,
+			defaultVarName,
+			defaultValue,
+			altVarName,
+		) => {
 			// do not replace things preceded by a odd number of \
 			if (escapeChars.length % 2 === 1) {
 				return varNameWithDollarSign
+			}
+			if (typeof defaultVarName !== 'undefined') {
+				// ${var:-default}: use the default when the variable is
+				// unset or empty, like the shell — and like commandConvert
+				// already does for commands on Windows.
+				return (
+					escapeChars.substring(0, escapeChars.length / 2) +
+					(process.env[defaultVarName] || defaultValue)
+				)
 			}
 			return (
 				escapeChars.substring(0, escapeChars.length / 2) +

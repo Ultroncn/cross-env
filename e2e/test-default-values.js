@@ -134,6 +134,43 @@ async function runTests() {
 			},
 		},
 		{
+			name: 'Default value syntax in an env var value when variable is undefined',
+			test: async () => {
+				const result = await runCommand(crossEnvPath, [
+					'FOO=${E2E_MISSING_VAR_XYZ:-bar}',
+					'node',
+					'-e',
+					'console.log(process.env.FOO)',
+				])
+
+				// Env var values are resolved by cross-env itself on every
+				// platform, so the default applies everywhere.
+				if (result.stdout.trim() !== 'bar') {
+					throw new Error(`Expected 'bar', got '${result.stdout.trim()}'`)
+				}
+			},
+		},
+		{
+			name: 'Default value syntax in an env var value when variable is defined',
+			test: async () => {
+				process.env.E2E_DEFINED_VAR = 'real'
+				try {
+					const result = await runCommand(crossEnvPath, [
+						'FOO=${E2E_DEFINED_VAR:-bar}',
+						'node',
+						'-e',
+						'console.log(process.env.FOO)',
+					])
+
+					if (result.stdout.trim() !== 'real') {
+						throw new Error(`Expected 'real', got '${result.stdout.trim()}'`)
+					}
+				} finally {
+					delete process.env.E2E_DEFINED_VAR
+				}
+			},
+		},
+		{
 			name: 'Default value with spaces',
 			test: async () => {
 				const result = await runCommand(crossEnvPath, [

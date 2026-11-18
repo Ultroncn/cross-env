@@ -116,6 +116,42 @@ describe('varValueConvert', () => {
 		expect(varValueConvert('\\\\$VAR1', 'TEST')).toBe('\\value1')
 	})
 
+	test('resolves a default value when the variable is unset', () => {
+		vi.mocked(isWindowsModule.isWindows).mockReturnValue(false)
+		expect(varValueConvert('foo-${VAR_POTATO:-bar}', 'TEST')).toBe('foo-bar')
+	})
+
+	test('resolves a default value when the variable is set', () => {
+		vi.mocked(isWindowsModule.isWindows).mockReturnValue(false)
+		expect(varValueConvert('foo-${VAR1:-bar}', 'TEST')).toBe('foo-value1')
+	})
+
+	test('resolves a default value when the variable is empty', () => {
+		vi.mocked(isWindowsModule.isWindows).mockReturnValue(false)
+		process.env.VAR_EMPTY = ''
+		expect(varValueConvert('foo-${VAR_EMPTY:-bar}', 'TEST')).toBe('foo-bar')
+		delete process.env.VAR_EMPTY
+	})
+
+	test('resolves a default value mixed with plain variables', () => {
+		vi.mocked(isWindowsModule.isWindows).mockReturnValue(false)
+		expect(varValueConvert('${VAR1}-${VAR_POTATO:-dflt}', 'TEST')).toBe(
+			'value1-dflt',
+		)
+	})
+
+	test('does not resolve a default value prefixed with \\ on UNIX', () => {
+		vi.mocked(isWindowsModule.isWindows).mockReturnValue(false)
+		expect(varValueConvert('\\${VAR_POTATO:-bar}', 'TEST')).toBe(
+			'${VAR_POTATO:-bar}',
+		)
+	})
+
+	test('resolves a default value prefixed with \\\\ on UNIX', () => {
+		vi.mocked(isWindowsModule.isWindows).mockReturnValue(false)
+		expect(varValueConvert('\\\\${VAR_POTATO:-bar}', 'TEST')).toBe('\\bar')
+	})
+
 	test('resolves an env variable prefixed with \\\\ on UNIX', () => {
 		vi.mocked(isWindowsModule.isWindows).mockReturnValue(false)
 		expect(varValueConvert('\\\\$VAR1', 'TEST')).toBe('\\value1')
